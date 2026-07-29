@@ -13,7 +13,7 @@ CJK script detection and romanization tuned for song lyrics, where general-text 
 
 - `detect(text)` returns `ja`, `zh`, `ko`, or empty (kana wins over han, hangul before han, bare han falls to zh)
 - `is_cjk(text)` any-CJK gate, `has_japanese(text)` kana/kanji gate (unlike `detect`, true for kanji-only text)
-- Japanese romaji via cutlet with lyric-oriented fixes: inline exception dict, long-vowel collapse from UniDic pron, floating contracted-n reattach, kun/on re-ranking via MeCab n-best
+- Japanese romaji via cutlet with lyric-oriented fixes: reading table, word spacing rewritten to lyric-booklet convention (`demo`, `nanda`, `ichido`), small kana read as long vowels (`ねぇ` to `nee`), katakana spelled out rather than back-translated (`メロディー` to `merodii`), digits read as numerals with their counter (`3時` to `sanji`, `1分` to `ippun`), floating contracted-n reattach, kun/on re-ranking via MeCab n-best
 - Repairs zh-simplified glyph corruption in ja lyrics (`乐谱` to `楽譜`) via opencc `s2t` + `t2jp`, gated so valid JP kanji (`叶` `机` `里`) and all-Japanese runs are never rewritten
 - Parenthetical furigana consumed as reading override: `外(はず)して` romanizes as `hazushite`
 - `romanize(text, lang)` dispatch, `lang` one of `auto`, `jp`, `cn`, `kr`, auto uses `detect` per text

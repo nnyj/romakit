@@ -6,8 +6,8 @@ class TestFurigana:
 
   def test_ruby_reading_beats_dictionary_and_exceptions(self):
     assert romanize('永遠(とわ)になりたい') == 'Towa ni naritai'
-    assert romanize('明日(あす)') == 'Asu'              # EXCEPTIONS says ashita
-    assert romanize('君(ハート)') == 'Heart'            # katakana keeps foreign spelling
+    assert romanize('明日(あす)') == 'Asu'              # the reading table says ashita
+    assert romanize('君(ハート)') == 'Haato'            # katakana ruby is spelled out
 
   def test_kanji_surface_kept_for_segmentation(self):
     # MeCab needs the kanji to split words; all-kana splits wrong (澄んだ -> すんだ)
@@ -23,10 +23,10 @@ class TestFurigana:
 
   def test_pre_sub_yields_to_ruby(self):
     # a PRE_SUB replacement here would leave brackets in the output
-    assert romanize('幻花(げんか)') == 'Genka'
+    assert romanize('三日月(みかづき)') == 'Mikazuki'
 
   def test_non_kana_parens_untouched(self):
-    assert romanize('(2番)ここから') == '(2 ban) koko kara'
+    assert romanize('(2番)ここから') == '(niban) koko kara'
 
   def test_numeral_counter_ruby(self):
     # unidic keeps 1人 as one word, so the reading came out "1ひとり" and cutlet's
@@ -40,7 +40,7 @@ class TestZhRepair:
   """opencc fixes Chinese character shapes without touching valid Japanese."""
 
   def test_zh_glyphs_converted(self):
-    assert romanize('乐谱も书けないし') == 'Gakufu mo kakenaishi'
+    assert romanize('乐谱も书けないし') == 'Gakufu mo kakenai shi'
     assert romanize('隐れて消えたい') == 'Kakurete kietai'
     assert romanize('青空、流线を そっと导いて') == 'Aozora, ryuusen wo sotto michibiite'
 
@@ -69,7 +69,7 @@ class TestZhRepair:
     # 关系 -> 関系 (系 is JP_SAFE so opencc stops there) -> 関係
     assert romanize('ぜんぜん关系ない') == 'Zenzen kankei nai'
     # same idea: opencc skips the group (后/云 are JP_SAFE) or fixes only half
-    assert romanize('最后にもう一度') == 'Saigo ni mou ichi do'
+    assert romanize('最后にもう一度') == 'Saigo ni mou ichido'
     assert romanize('明后日に考えよう') == 'Asatte ni kangaeyou'
     assert romanize('准备したのさ') == 'Junbi shita no sa'
     assert romanize('云间に 刻み込んだ') == 'Kumoma ni kizamikonda'
@@ -121,13 +121,12 @@ class TestReadings:
     assert romanize('目的') == 'Mokuteki'
 
   def test_split_compounds_via_pre_sub(self):
-    assert romanize('誰が袖に咲く幻花') == 'Dare ga sode ni saku genka'
     assert romanize('咽返る魅惑') == 'Musekaeru miwaku'
     assert romanize('風見鶏 飛べずに') == 'Kazamidori tobezu ni'
 
   def test_kanji_foreign_lemma_rejected(self):
     # unidic reads 汗 as ハン (Khan); Japanese reading must win
-    assert romanize('グラウンド 汗光らせ') == 'Ground ase hikarase'
+    assert romanize('グラウンド 汗光らせ') == 'Guraundo ase hikarase'
 
   def test_exceptions_exempt_from_foreign_lemma_penalty(self):
     # 刹那's entry is the Sanskrit "ksana", so the foreign-name rule pushed down
@@ -142,17 +141,52 @@ class TestReadings:
     assert romanize('凍てつく 闇夜も恐れない') == 'Itetsuku yamiyo mo osorenai'
     assert romanize('泥水で顔を洗って') == 'Doromizu de kao wo aratte'
     assert romanize('進撃の嚆矢は') == 'Shingeki no koushi wa'
+    assert romanize('良い日') == 'Ii hi'
+    assert romanize('灰になる') == 'Hai ni naru'
+    assert romanize('頬を伝う') == 'Hoho wo tsutau'
+    assert romanize('刃を向ける') == 'Yaiba wo mukeru'
+    assert romanize('君と僕') == 'Kimi to boku'   # unidic reads the name suffix kun
 
-  def test_hito_only_as_bare_token(self):
+  def test_cutlet_english_spellings_dropped(self):
+    # cutlet ships English spellings for these; lyric romaji wants the reading
+    assert romanize('東京の夜') == 'Toukyou no yoru'
+    assert romanize('弁当') == 'Bentou'
+
+  def test_tabi_and_sei_only_as_bare_nouns(self):
+    assert romanize('この度は') == 'Kono tabi wa'
+    assert romanize('一度だけ') == 'Ichido dake'   # after a number, the counter
+    assert romanize('生を受けて') == 'Sei wo ukete'
+    assert romanize('生きる') == 'Ikiru'           # verb, untouched
+
+  def test_pruned_readings_fall_back_to_mecab(self):
+    # both readings are real and human romaji prefers unidic's, so no override
     assert (romanize('他人に優しいあんたにこの孤独がわかるものか')
-            == 'Hito ni yasashii anta ni kono kodoku ga wakaru mono ka')
-    assert romanize('他人事') == 'Hitogoto'   # own word, the override cannot reach it
+            == 'Tanin ni yasashii anta ni kono kodoku ga wakaru mono ka')
+    assert romanize('他人事') == 'Hitogoto'   # own word, unaffected
+    assert romanize('躯') == 'Mukuro'
+    # 夜 in 夜が明ける reads yo two times in three, so the idiom keeps unidic's yoru
+    assert romanize('夜が明けて') == 'Yoru ga akete'
+    assert romanize('夜に駆ける') == 'Yoru ni kakeru'
 
-  def test_yo_ga_akeru_idiom(self):
-    assert romanize('夜が明けて') == 'Yo ga akete'
-    assert romanize('覚束ぬままに夜が明けて') == 'Obotsukanu mama ni yo ga akete'
-    assert romanize('夜が明けるまで語り続けてた') == 'Yo ga akeru made katari tsuzuketeta'
-    assert romanize('夜に駆ける') == 'Yoru ni kakeru'   # plain 夜 stays yoru
+  def test_lexicon_gap_readings(self):
+    assert romanize('川の流れ') == 'Kawa no nagare'
+    assert romanize('小川') == 'Ogawa'          # own word, keeps the suffix reading
+    assert romanize('悪の華') == 'Aku no hana'
+    assert romanize('塵になる') == 'Chiri ni naru'
+    assert romanize('一日') == 'Ichinichi'
+    assert romanize('一日中') == 'Ichinichijuu'
+    assert romanize('春風が') == 'Harukaze ga'
+    assert romanize('僕等の歌') == 'Bokura no uta'
+    assert romanize('跡形も無き') == 'Atokata mo naki'
+
+  def test_digits_read_as_kanji_numerals(self):
+    # rewritten before tagging, so unidic supplies the counter phonology
+    assert romanize('1つの夢') == 'Hitotsu no yume'
+    assert romanize('3時に') == 'Sanji ni'
+    assert romanize('1分') == 'Ippun'
+    assert romanize('12時') == 'Juuniji'
+    assert romanize('100年') == 'Hyakunen'
+    assert romanize('0を数えて') == 'Zero wo kazoete'   # a bare 0 is zero, not rei
 
   def test_odokasu_vs_obiyakasu(self):
     assert romanize('脅かして') == 'Odokashite'
@@ -170,9 +204,9 @@ class TestReadings:
   def test_split_compound_readings(self):
     assert romanize('無自覚の創物って') == 'Mujikaku no soubutsu tte'
     assert romanize('不器用だから全てが') == 'Bukiyou dakara subete ga'
-    assert romanize('何気ない日でも') == 'Nanige nai hi de mo'
+    assert romanize('何気ない日でも') == 'Nanige nai hi demo'
     assert romanize('言葉が何遍も') == 'Kotoba ga nanben mo'
-    assert romanize('赤信号でも直進でしょ') == 'Akashingou de mo chokushin desho'
+    assert romanize('赤信号でも直進でしょ') == 'Akashingou demo chokushin desho'
     assert romanize('空に浮かぶ三日月') == 'Sora ni ukabu mikazuki'
     assert romanize('理不尽な我慢') == 'Ri fujin na gaman'
 
@@ -185,17 +219,106 @@ class TestReadings:
   def test_numeral_gemination(self):
     assert romanize('震える一歩') == 'Furueru ippo'
     assert romanize('もう一回') == 'Mou ikkai'
-    assert romanize('一日中') == 'Ichi nichijuu'  # starts with n, no doubling
+    assert romanize('一日中') == 'Ichinichijuu'   # starts with n, no doubling
     assert romanize('一つ') == 'Hitotsu'          # this counter reads 一 as hito
 
-  def test_place_name_long_vowel_collapse(self):
-    assert romanize('東京へ行く') == 'Tokyo e iku'
-
-  def test_foreign_spelling(self):
-    assert romanize('あぁ 美味しいカレーが 食べたいな') == 'A oishii curry ga tabetai na'
+  def test_katakana_spelled_out(self):
+    # cutlet's foreign spelling would print the source words (curry, melody)
+    assert romanize('あぁ 美味しいカレーが 食べたいな') == 'Aa oishii karee ga tabetai na'
+    assert romanize('メロディーが響く') == 'Merodii ga hibiku'
 
   def test_floating_n_reattach(self):
     assert romanize('分からんよ') == 'Wakaran yo'
 
   def test_non_japanese_passthrough(self):
     assert romanize('hello world') == 'hello world'
+
+
+class TestSpacing:
+  """Joins and splits rewritten over cutlet's part-of-speech spacing."""
+
+  def test_particle_clusters_join(self):
+    assert romanize('でもいつか誰かに') == 'Demo itsuka dareka ni'
+    assert romanize('そうなんだよ') == 'Sou nanda yo'
+    assert romanize('好きなのかな') == 'Suki nano kana'
+    assert romanize('雨だって降る') == 'Ame datte furu'
+
+  def test_indefinite_ka_joins_question_words(self):
+    # the join is keyed on the question word's part of speech, not a word list
+    assert romanize('だれかに') == 'Dareka ni'
+    assert romanize('どこかで待ってる') == 'Dokoka de matteru'
+    assert romanize('いつしか消えた') == 'Itsushika kieta'
+    assert romanize('そうか') == 'Sou ka'   # here か asks, it is not part of a word
+
+  def test_quoting_tte_splits_off_the_copula(self):
+    assert romanize('好きって言って') == 'Suki tte itte'
+    assert romanize('いいねって') == 'Ii ne tte'
+    assert romanize('なんだって言うの') == 'Nandatte iu no'   # on だ it stays solid
+
+  def test_conjunctions_split_but_dakara_joins(self):
+    assert romanize('行かないから') == 'Ikanai kara'
+    assert romanize('痛いけど笑う') == 'Itai kedo warau'
+    assert romanize('だから走る') == 'Dakara hashiru'
+    assert romanize('進んで行く') == 'Susunde iku'   # て/で stay attached
+    assert romanize('泣かなくちゃ') == 'Nakanakucha'
+    assert romanize('何を言ったって') == 'Nani wo ittatte'
+    assert romanize('泣いたり笑ったり') == 'Naitari warattari'
+
+  def test_split_compound_nouns_rejoin(self):
+    # unidic splits these, human romaji writes one word
+    assert romanize('交差点で') == 'Kousaten de'
+    assert romanize('路地裏の猫') == 'Rojiura no neko'
+    assert romanize('蜃気楼') == 'Shinkirou'
+
+  def test_conjectural_auxiliary_splits(self):
+    assert romanize('会えるなら') == 'Aeru nara'
+    assert romanize('嘘だろう') == 'Uso darou'
+
+  def test_counter_and_small_tsu_join(self):
+    assert romanize('もう一度だけ') == 'Mou ichido dake'
+    assert romanize('何度でも') == 'Nando demo'
+    assert romanize('ずっとそばに') == 'Zutto soba ni'
+
+  def test_helper_verbs_and_suffix_particles_join(self):
+    assert romanize('歩き出す') == 'Arukidasu'
+    assert romanize('消えそうな声') == 'Kiesou na koe'
+    assert romanize('楽しそうな顔') == 'Tanoshisou na kao'
+    assert romanize('一人きりで少しずつ') == 'Hitorikiri de sukoshizutsu'
+    assert romanize('悪くない') == 'Warukunai'
+    assert romanize('悲しさが') == 'Kanashisa ga'
+
+  def test_adverbial_sou_keeps_its_space(self):
+    assert romanize('そうさ僕は') == 'Sou sa boku wa'
+    assert romanize('そうだよ') == 'Sou da yo'
+
+  def test_verb_keeps_its_space(self):
+    # the vowel and helper rules must not swallow a real verb
+    assert romanize('傍にいて') == 'Soba ni ite'
+    assert romanize('僕は歌う') == 'Boku wa utau'
+
+
+class TestLongVowels:
+  """Small kana and repeated vowels are written out, not dropped."""
+
+  def test_small_vowel_lengthens(self):
+    assert romanize('ねぇ') == 'Nee'
+    assert romanize('あぁ') == 'Aa'
+    assert romanize('さぁ行こう') == 'Saa ikou'
+
+  def test_small_vowel_across_rows_stays_a_digraph(self):
+    assert romanize('フェイク') == 'Feiku'
+    assert romanize('チェック') == 'Chekku'
+
+  def test_repeated_interjection_joins(self):
+    assert romanize('ねえねえ') == 'Nee nee'
+    assert romanize('ああああ') == 'Aaaa'
+    assert romanize('ほらほら') == 'Hora hora'   # a repeated word is still two words
+    assert romanize('バイバイまたね') == 'Baibai mata ne'   # two-mora katakana doubles
+
+  def test_filler_kana_leans_on_the_word_before(self):
+    assert romanize('たとえ君が') == 'Tatoe kimi ga'
+    assert romanize('あのね') == 'Ano ne'   # a filler word of its own keeps its space
+
+  def test_cchi_over_tchi(self):
+    assert romanize('こっちだよ') == 'Kocchi da yo'
+    assert romanize('ひとりぼっち') == 'Hitoribocchi'

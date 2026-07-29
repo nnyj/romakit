@@ -1,0 +1,90 @@
+# Word data for jp.py. Columns: kind, key, value, note.
+#   r  fixed reading, applied when MeCab splits the word off as a whole token
+#   s  text replaced before MeCab, for words it splits and then misreads
+# Every entry is measured net-positive against human romaji on a lyric corpus.
+# Order matters for s rows: earlier rows run first (咽返る before 咽返).
+r	私	watashi
+r	君	kimi	unidic reads the name suffix kun
+r	風	kaze
+r	側	soba
+r	刹那	setsuna	unidic reads the Sanskrit ksana
+r	擦り	kosuri
+r	明日	ashita	asu also occurs; songs meaning asu usually print furigana
+r	本当	hontou	unidic pron honto
+r	身体	karada	unidic picks shintai
+r	言う	iu	unidic picks yuu
+r	今日	kyou
+r	嗚呼	aa
+r	瞬く	matataku	unidic shibatataku
+r	硝子	garasu	whole-word reading, unidic reads per kanji: shoushi
+r	怒り	ikari
+r	弱音	yowane	unidic jakuon
+r	上手	jouzu
+r	塗れ	mamire
+r	一途	ichizu
+r	甘え	amae
+r	良い	ii	unidic yoi
+r	灰	hai	unidic bai
+r	頬	hoho	unidic hoo
+r	下	shita	unidic moto
+r	間	ma	unidic aida
+r	傍	soba	unidic katawara, the reading of 傍ら
+r	刃	yaiba	unidic ha
+r	棘	toge	unidic odoro
+r	弾ける	hajikeru	unidic hikeru, the reading of 弾く
+r	嘲笑う	azawarau	unidic azakewarau
+r	永久	towa	unidic eikyuu; lyrics printing furigana always show towa
+r	幼	osana	as a noun unidic says you; 幼い/幼子 are own tokens
+r	水面	minamo	unidic suimen
+r	明後日	asatte	unidic myougonichi
+r	泡沫	utakata	unidic houmatsu
+r	宴	utage	unidic en
+r	数多	amata	unidic suuta
+r	昂	taka	unidic name reading Noboru
+r	鋼	hagane	unidic suffix kou
+r	灯火	tomoshibi	unidic touka
+r	貴女	anata	unidic kijo
+r	道標	michishirube	unidic douhyou
+r	群	mure	alone only; 群衆/群青 are own tokens
+r	埋もれ	umore	in a sentence unidic picks the bookish uzumore
+r	海月	kurage	unidic kaigetsu
+r	ソーブツ	soubutsu	pairs with the 創物 s row
+r	闇夜	yamiyo	unidic an'ya, the reading of 暗夜
+r	傷痕	kizuato	unidic shoukon
+r	上辺	uwabe	unidic jouhen, not a real reading
+r	泥水	doromizu	unidic deisui
+r	嚆矢	koushi	unidic outputs the name Hajime
+r	川	kawa	unidic gives the suffix reading gawa (小川 ogawa)
+r	悪	aku	unidic waru, the person sense (悪ガキ)
+r	塵	chiri	unidic gomi
+r	一日	ichinichi	unidic tsuitachi, the day of the month
+r	春風	harukaze	unidic shunpuu
+r	0	zero	unidic gives digits no reading at all
+s	勿れ	なかれ
+s	僕等	ボクラ	splits into 僕+等, and 等 alone is tou
+s	無き	ナキ	splits into 無+き, giving muki
+s	たとえ	例え	splits into た+と+え; the kanji spelling reads the same
+s	兎に角	とにかく
+s	兎にも角にも	とにもかくにも
+s	言叶	言葉	叶 is JP_SAFE, so opencc never touches this group
+s	関系	関係	opencc turns 关 into 関 but leaves 系, so 关系 stops half-fixed
+s	最后	最後	后/云/壁 are JP_SAFE: opencc skips or half-fixes these groups
+s	准備	準備
+s	明后日	明後日	the r row then gives asatte
+s	云間	雲間
+s	羊云	羊雲
+s	復雑	複雑	复 converts, but to 復, the wrong twin of 複
+s	完壁	完璧	common typo: 壁 for 璧
+s	咽返る	ムセカエル	split 咽+返る -> nodo kaeru; katakana stays one unknown word
+s	咽返	ムセカエ
+s	風見鶏	カザミドリ	split 風見+鶏 -> kazami niwatori
+s	極彩色	ゴクサイシキ	split 極+彩色 -> kyoku saishiki
+s	覚束ぬ	オボツカヌ	覚束 splits into 覚+束 kakuzoku; 覚束ない/覚束無い fine
+s	創物	ソーブツ	missing from unidic; ソウブツ splits, ソー stays one word
+s	不器用	ブキヨウ	split 不+器用 -> fu kiyou
+s	何気	ナニゲ	split 何+気 -> nan ge / nani ki; always nanige (何気ない)
+s	何遍	何ベン	遍 becomes pen here; 何 stays a number so nan+ben joins
+s	赤信号	アカシンゴウ	unidic reads 赤 as セキ, no other parse fixes it
+s	心配性	しんぱいしょう	splits 心配+性, and 性 after a noun is sei by design
+s	洗濯物	洗濯モノ	split 洗濯+物 -> sentaku butsu
+s	三日月	ミカヅキ	split 三+日+月 -> mikka tsuki

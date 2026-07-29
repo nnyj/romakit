@@ -32,3 +32,6 @@ romakit = "romakit.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["romakit*"]
+
+[tool.setuptools.package-data]
+romakit = ["*.tsv"]
