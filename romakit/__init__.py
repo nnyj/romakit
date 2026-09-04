@@ -6,7 +6,8 @@ zh: pypinyin, ko: korean-romanizer), so they import lazily and
 """
 from .detect import detect, is_cjk
 
-__all__ = ["detect", "is_cjk", "has_japanese", "romanize", "LANGS", "norm_lang"]
+__all__ = ["detect", "is_cjk", "has_japanese", "romanize", "pairs", "mora",
+           "LANGS", "norm_lang"]
 
 # command line codes, mapped to the codes detect() returns.
 # 'auto' means guess per text.
@@ -38,6 +39,27 @@ def romanize(text, lang="auto", **jp_kw):
     return ko.romanize(text)
   from . import jp
   return jp.romanize(text, **jp_kw)
+
+def pairs(text, lang="auto", **jp_kw):
+  """[(surface, romaji)] per karaoke unit: a word for Japanese, a glyph for
+  Chinese and Korean. Lets a caller time the original line, not just the romaji.
+  Language resolves as romanize does."""
+  loc = norm_lang(lang) or detect(text)
+  if loc == "zh":
+    from . import zh
+    return zh.pairs(text)
+  if loc == "ko":
+    from . import ko
+    return ko.pairs(text)
+  from . import jp
+  return jp.pairs(text, **jp_kw)
+
+def mora(text, **jp_kw):
+  """Japanese romaji split into karaoke units, one per kana mora (foreign words
+  whole). Japanese only, since Chinese pinyin and Korean RR are already one
+  syllable per token; () when text has no Japanese."""
+  from . import jp
+  return jp.mora(text, **jp_kw)
 
 def __getattr__(name):
   if name == "has_japanese":

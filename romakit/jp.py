@@ -58,6 +58,10 @@ JP_REGEX = re.compile(r'[\p{IsHira}\p{IsKatakana}\p{IsHan}]')
 # reading, since writing it into the text breaks the split (澄んだ -> すんだ).
 FURIGANA_REGEX = re.compile(r'(\p{IsHan}+)[(（]([\p{IsHira}\p{IsKatakana}ー]+)[)）]')
 KANA_ONLY_REGEX = re.compile(r'[\p{IsHira}\p{IsKatakana}ー]+')
+# One mora of a hiragana reading: a leading sokuon (っ, gemination) joined on, a
+# base kana, then its small kana (きゃ, ねぇ) and long mark (ー). ん matches as its
+# own base. Used to split a reading into karaoke units.
+MORA_REGEX = re.compile(r'っ*[ぁ-ゖ][ゃゅょぁぃぅぇぉ]?ー*')
 # A digit plus its counter is one token (1人), so the reading comes out "1ひとり".
 # The kana already says the number, so drop the digits.
 LEADING_DIGITS_REGEX = re.compile(r'^\d+')
@@ -537,6 +541,62 @@ class LyricalCutlet(cutlet.Cutlet):
       return word.pos_exc
     return super().romaji_word(word)
 
+  def _reading(self, word):
+    """Hiragana reading of a word, or None when it has none (a foreign or
+    unknown word), so the caller keeps it whole."""
+    ruby = getattr(word, 'ruby', None)
+    if ruby:
+      return jaconv.kata2hira(ruby)
+    f = getattr(word, 'feature', None)
+    for attr in ('pron', 'kana'):
+      k = getattr(f, attr, None) if f else None
+      if k and k != '*':
+        return jaconv.kata2hira(k)
+    if KANA_ONLY_REGEX.fullmatch(word.surface or ''):
+      return jaconv.kata2hira(word.surface)
+    return None
+
+  def _word_mora(self, word):
+    r"""Split a word's romaji into per-kana mora, or None to keep it whole.
+
+    The kana reading is the mora truth (か = one, きゃ one, っ leads the next),
+    so a mora is a base kana with its small kana and long mark, a leading sokuon
+    joined on. Each mora is mapped on its own and the pieces are checked to
+    rebuild the word's own romaji; a mismatch (furigana, an exception, gemination
+    the split broke) returns None, so a coarser whole word never a wrong one."""
+    reading = self._reading(word)
+    if not reading:
+      return None
+    chunks = MORA_REGEX.findall(reading)
+    if ''.join(chunks) != reading:  # regex left kana uncovered, do not trust it
+      return None
+    roma = [self.map_kana(c) for c in chunks]
+    return roma if ''.join(roma) == self.romaji_word(word) else None
+
+  def romaji_mora(self, text, capitalize=True, title=False):
+    """Romaji split into karaoke units: one per kana mora for Japanese words,
+    the whole romaji for foreign words. Spacing and case follow romaji()."""
+    if not text:
+      return []
+    words, tokens = self._build(text, capitalize, title)
+    out = []
+    for w, t in zip(words, tokens):
+      roma = str(t)
+      core = roma.rstrip()
+      mora = self._word_mora(w)
+      if mora and sum(len(m) for m in mora) == len(core):
+        # slice the actual cased/spaced token by the mora lengths, so casing and
+        # the trailing space ride along untouched
+        pos, pieces = 0, []
+        for m in mora:
+          pieces.append(core[pos:pos + len(m)])
+          pos += len(m)
+        pieces[-1] += roma[len(core):]
+        out.extend(pieces)
+      else:
+        out.append(roma)
+    return out
+
   def _tag(self, text, spans):
     """Split into words, picking the best-scoring parse.
 
@@ -560,9 +620,8 @@ class LyricalCutlet(cutlet.Cutlet):
       words = _wrap_nodes(self.tagger(text), text, spans, used)
     return words, used
 
-  def romaji(self, text, capitalize=True, title=False):
-    if not text:
-      return ""
+  def _build(self, text, capitalize, title):
+    """Parse to (words, romaji tokens); shared by romaji and romaji_pairs."""
     text = SEPARATOR_REGEX.sub(' ', cutlet.normalize_text(text))
     if KANJI_REGEX.search(text):
       text = _zh_to_shinjitai(text)
@@ -581,7 +640,21 @@ class LyricalCutlet(cutlet.Cutlet):
     tokens = self.romaji_tokens(words, capitalize, title)
     _geminate_ichi(words, tokens)
     _respace(words, tokens)
+    return words, tokens
+
+  def romaji(self, text, capitalize=True, title=False):
+    if not text:
+      return ""
+    _, tokens = self._build(text, capitalize, title)
     return "".join(str(tok) for tok in tokens).strip()
+
+  def romaji_pairs(self, text, capitalize=True, title=False):
+    """[(word surface, romaji)] per MeCab word, romaji trimmed of spacing.
+    For per-word karaoke on the original line."""
+    if not text:
+      return []
+    words, tokens = self._build(text, capitalize, title)
+    return [(w.surface, str(t).strip()) for w, t in zip(words, tokens)]
 
 # --- public API ---
 
@@ -606,3 +679,18 @@ def romanize(text, capitalize=True, title=False):
     return text
   out = _romanizer().romaji(text, capitalize=capitalize, title=title)
   return FLOATING_N_REGEX.sub('n', out)
+
+@lru_cache(maxsize=8192)
+def pairs(text, capitalize=True, title=False):
+  """[(word surface, romaji)] per Japanese word; () when text has no Japanese."""
+  if not has_japanese(text):
+    return ()
+  return tuple(_romanizer().romaji_pairs(text, capitalize=capitalize, title=title))
+
+@lru_cache(maxsize=8192)
+def mora(text, capitalize=True, title=False):
+  """Romaji split into karaoke units, one per kana mora (foreign words whole);
+  () when text has no Japanese."""
+  if not has_japanese(text):
+    return ()
+  return tuple(_romanizer().romaji_mora(text, capitalize=capitalize, title=title))
