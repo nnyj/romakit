@@ -1,6 +1,7 @@
 # Word data for jp.py. Columns: kind, key, value, note.
 #   r  fixed reading, applied when MeCab splits the word off as a whole token
 #   s  text replaced before MeCab, for words it splits and then misreads
+#   j  katakana compound written solid, for pairs MeCab splits (value column empty)
 # Every entry is measured net-positive against human romaji on a lyric corpus.
 # Order matters for s rows: earlier rows run first (咽返る before 咽返).
 r	私	watashi
@@ -45,23 +46,22 @@ r	鋼	hagane	unidic suffix kou
 r	灯火	tomoshibi	unidic touka
 r	貴女	anata	unidic kijo
 r	道標	michishirube	unidic douhyou
-r	群	mure	alone only; 群衆/群青 are own tokens
 r	埋もれ	umore	in a sentence unidic picks the bookish uzumore
 r	海月	kurage	unidic kaigetsu
 r	ソーブツ	soubutsu	pairs with the 創物 s row
+r	キレェゴト	kireigoto	pairs with the 綺麗事 s row
 r	闇夜	yamiyo	unidic an'ya, the reading of 暗夜
 r	傷痕	kizuato	unidic shoukon
 r	上辺	uwabe	unidic jouhen, not a real reading
 r	泥水	doromizu	unidic deisui
 r	嚆矢	koushi	unidic outputs the name Hajime
-r	川	kawa	unidic gives the suffix reading gawa (小川 ogawa)
+r	川	kawa	unidic gives the suffix reading gawa; both are 和 so scoring cannot rank them
 r	悪	aku	unidic waru, the person sense (悪ガキ)
 r	塵	chiri	unidic gomi
 r	一日	ichinichi	unidic tsuitachi, the day of the month
 r	春風	harukaze	unidic shunpuu
 r	0	zero	unidic gives digits no reading at all
 s	勿れ	なかれ
-s	僕等	ボクラ	splits into 僕+等, and 等 alone is tou
 s	無き	ナキ	splits into 無+き, giving muki
 s	たとえ	例え	splits into た+と+え; the kanji spelling reads the same
 s	兎に角	とにかく
@@ -87,4 +87,14 @@ s	何遍	何ベン	遍 becomes pen here; 何 stays a number so nan+ben joins
 s	赤信号	アカシンゴウ	unidic reads 赤 as セキ, no other parse fixes it
 s	心配性	しんぱいしょう	splits 心配+性, and 性 after a noun is sei by design
 s	洗濯物	洗濯モノ	split 洗濯+物 -> sentaku butsu
+s	理不尽	リフジン	split 理+不尽, and 理 alone scores as kotowari
+s	空回転	カラカイテン	split 空+回転 -> sora kaiten; both 空 readings are 和
 s	三日月	ミカヅキ	split 三+日+月 -> mikka tsuki
+s	綺麗事	キレェゴト	split 綺麗+事 -> kirei ji; キレイゴト splits again, キレェ stays one word
+s	夜が明け	よが明け	夜 is yo in this idiom (yo ga akeru), yoru elsewhere
+s	四次元	ヨジゲン	四 is yon before a counter, yo in this compound
+j	ヒッチコック		Hitchcock, split into ヒッチ+コック
+j	ラップランド		Lapland, split into ラップ+ランド
+j	ジュリエット		Juliet, split into ジュ+リエット after a separator
+j	グレーゾーン		split into グレー+ゾーン
+j	ウォークマン		Walkman, split into ウォーク+マン

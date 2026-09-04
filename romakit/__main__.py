@@ -9,7 +9,6 @@ from pathlib import Path
 
 from . import LANGS, romanize
 
-
 def main():
   parser = argparse.ArgumentParser(prog='romakit')
   parser.add_argument('input', nargs='?', help='input file, default stdin')
@@ -21,12 +20,11 @@ def main():
   sys.stdin.reconfigure(encoding='utf-8')
   sys.stdout.reconfigure(encoding='utf-8')
   text = Path(args.input).read_text(encoding='utf-8') if args.input else sys.stdin.read()
-  out = ''.join(romanize(line, args.lang, title=True) + '\n' for line in text.splitlines())
+  out = ''.join(romanize(line, args.lang) + '\n' for line in text.splitlines())
   if args.output:
     Path(args.output).write_text(out, encoding='utf-8')
   else:
     print(out, end='')
-
 
 if __name__ == '__main__':
   main()
