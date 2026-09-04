@@ -13,7 +13,6 @@ HAN_REGEX = re.compile(
   r'|[\U00020000-\U0003ffff]'  # rare traditional and variant blocks
 )
 
-
 def detect(text):
   """Return 'ja', 'zh', 'ko', or '' if the text has no CJK writing."""
   if KANA_REGEX.search(text):
@@ -23,7 +22,6 @@ def detect(text):
   if HAN_REGEX.search(text):
     return 'zh'
   return ''
-
 
 def is_cjk(text):
   """True if the text has any CJK writing."""
