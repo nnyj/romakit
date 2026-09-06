@@ -11,13 +11,13 @@ def test_hangul_means_ko():
 
 def test_bare_han_falls_to_zh():
   assert detect('我爱你') == 'zh'
-  assert detect('我愛妳') == 'zh'
+  assert detect('㐀') == 'zh'   # extension A, outside the common block
 
 def test_non_cjk():
   assert detect('hello world') == ''
   assert detect('') == ''
-  assert not is_cjk('abc 123')
 
 def test_is_cjk():
   assert is_cjk('さくら')
   assert is_cjk('漢字')
+  assert not is_cjk('abc 123')

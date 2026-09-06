@@ -28,7 +28,9 @@ def romanize(text, lang="auto", **jp_kw):
 
   lang='auto' guesses, falling back to Japanese when no CJK writing is found
   (jp.romanize then returns the text as is).
-  jp_kw (capitalize, title) goes to jp.romanize only; zh and ko take no options.
+  jp_kw (capitalize, title, foreign) goes to jp.romanize only, foreign=False
+  spells katakana loanwords out instead of printing the English lemma;
+  zh and ko take no options.
   """
   loc = norm_lang(lang) or detect(text)
   if loc == "zh":

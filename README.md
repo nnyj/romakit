@@ -13,12 +13,13 @@ CJK script detection and romanization tuned for song lyrics, where general-text 
 
 - `detect(text)` returns `ja`, `zh`, `ko`, or empty (kana wins over han, hangul before han, bare han falls to zh)
 - `is_cjk(text)` any-CJK gate, `has_japanese(text)` kana/kanji gate (unlike `detect`, true for kanji-only text)
-- Japanese romaji via cutlet with lyric-oriented fixes: reading table, small kana read as long vowels (`ねぇ` to `nee`), `ウォ`/`ウィ`/`ウェ` kept on the w row (`ウォークマン` to `Wookuman`), katakana spelled out rather than back-translated (`メロディー` to `merodii`), digits read as numerals with their counter (`3時` to `sanji`, `1分` to `ippun`), kun/on re-ranking via MeCab n-best
+- Japanese romaji via cutlet with lyric-oriented fixes: reading table, small kana read as long vowels (`ねぇ` to `nee`), `ウォ`/`ウィ`/`ウェ` kept on the w row (`ウォークマン` to `Wookuman`), digits read as numerals with their counter (`3時` to `sanji`, `1分` to `ippun`), kun/on re-ranking via MeCab n-best
 - Word spacing rewritten to lyric-booklet convention: `demo`, `nanda`, contracted `ん` glued left (`wakarun da`), endings and prefixes glued to their word (`kanousei`, `bokura`, `oreteki`, `osanaki hi`), a one-character numeral glued to the noun it counts (`nijigen`) while a multi-unit number keeps it apart (`hachijuu ji`), `soredemo` as one word against `sore de ii`, katakana compounds MeCab splits rejoined from the `j` rows of `jp_words.tsv` (`rappurando`, `Jurietto`), `・` and `／` normalized to a word break (`タイム・マシン` to `Taimu mashin`)
 - Repairs zh-simplified glyph corruption in ja lyrics (`乐谱` to `楽譜`) via opencc `s2t` + `t2jp`, gated so valid JP kanji (`叶` `机` `里`) and all-Japanese runs are never rewritten
 - Parenthetical furigana consumed as reading override: `外(はず)して` romanizes as `hazushite`
 - `romanize(text, lang)` dispatch, `lang` one of `auto`, `jp`, `cn`, `kr`, auto uses `detect` per text
 - `zh.romanize(text)` tone-less pinyin, `ko.romanize(text)` Revised Romanization
+- Katakana loanwords print their English lemma (`シナリオ` to `Scenario`), `foreign=False` or `--no-foreign` spells them out (`Shinario`), unlisted katakana always spelled out (`ハロゲンライト` to `Halogen raito`)
 
 ## Usage
 

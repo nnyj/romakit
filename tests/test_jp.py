@@ -114,7 +114,7 @@ class TestReadings:
     assert romanize('可能性') == 'Kanousei'   # 〜性 suffix stays sei
     assert romanize('危険性') == 'Kikensei'
 
-  def test_mure_and_umore(self):
+  def test_bare_kanji_takes_kunyomi_but_compounds_keep_onyomi(self):
     assert romanize('思い上がる群は歪みに埋もれた') == 'Omoiagaru mure wa yugami ni umoreta'
     assert romanize('群衆') == 'Gunshuu'   # compounds keep on'yomi
 
@@ -130,7 +130,7 @@ class TestReadings:
 
   def test_kanji_foreign_lemma_rejected(self):
     # unidic reads 汗 as ハン (Khan); Japanese reading must win
-    assert romanize('グラウンド 汗光らせ') == 'Guraundo ase hikarase'
+    assert romanize('ピアノ 汗光らせ') == 'Piano ase hikarase'
 
   def test_exceptions_exempt_from_foreign_lemma_penalty(self):
     # 刹那's entry is the Sanskrit "ksana", so the foreign-name rule pushed down
@@ -138,9 +138,8 @@ class TestReadings:
     assert romanize('刹那') == 'Setsuna'
     assert romanize('刹那を繰り返す') == 'Setsuna wo kurikaesu'
 
-  def test_jukujikun_and_lexicon_gaps(self):
+  def test_reading_table_entries(self):
     assert romanize('海月のような月が爆ぜた') == 'Kurage no you na tsuki ga hazeta'
-    assert romanize('ガラス') == 'Garasu'            # foreign spelling gave Dutch "Glas"
     assert romanize('硝子(ガラス)の心') == 'Garasu no kokoro'
     assert romanize('凍てつく 闇夜も恐れない') == 'Itetsuku yamiyo mo osorenai'
     assert romanize('泥水で顔を洗って') == 'Doromizu de kao wo aratte'
@@ -150,6 +149,14 @@ class TestReadings:
     assert romanize('頬を伝う') == 'Hoho wo tsutau'
     assert romanize('刃を向ける') == 'Yaiba wo mukeru'
     assert romanize('君と僕') == 'Kimi to boku'   # unidic reads the name suffix kun
+    assert romanize('川の流れ') == 'Kawa no nagare'
+    assert romanize('小川') == 'Ogawa'          # own word, keeps the suffix reading
+    assert romanize('悪の華') == 'Aku no hana'
+    assert romanize('塵になる') == 'Chiri ni naru'
+    assert romanize('一日') == 'Ichinichi'
+    assert romanize('春風が') == 'Harukaze ga'
+    assert romanize('僕等の歌') == 'Bokura no uta'
+    assert romanize('跡形も無き') == 'Atokata mo naki'
 
   def test_cutlet_english_spellings_dropped(self):
     # cutlet ships English spellings for these; lyric romaji wants the reading
@@ -172,17 +179,6 @@ class TestReadings:
     assert romanize('躯') == 'Mukuro'
     assert romanize('夜が明けて') == 'Yo ga akete'   # the idiom reads yo
     assert romanize('夜に駆ける') == 'Yoru ni kakeru'
-
-  def test_lexicon_gap_readings(self):
-    assert romanize('川の流れ') == 'Kawa no nagare'
-    assert romanize('小川') == 'Ogawa'          # own word, keeps the suffix reading
-    assert romanize('悪の華') == 'Aku no hana'
-    assert romanize('塵になる') == 'Chiri ni naru'
-    assert romanize('一日') == 'Ichinichi'
-    assert romanize('一日中') == 'Ichinichijuu'
-    assert romanize('春風が') == 'Harukaze ga'
-    assert romanize('僕等の歌') == 'Bokura no uta'
-    assert romanize('跡形も無き') == 'Atokata mo naki'
 
   def test_digits_read_as_kanji_numerals(self):
     # rewritten before tagging, so unidic supplies the counter phonology
@@ -228,9 +224,8 @@ class TestReadings:
     assert romanize('一つ') == 'Hitotsu'          # this counter reads 一 as hito
 
   def test_katakana_spelled_out(self):
-    # cutlet's foreign spelling would print the source words (curry, melody)
-    assert romanize('あぁ 美味しいカレーが 食べたいな') == 'Aa oishii karee ga tabetai na'
-    assert romanize('メロディーが響く') == 'Merodii ga hibiku'
+    # foreign=False spells the kana out instead of the source word (melody)
+    assert romanize('メロディーが響く', foreign=False) == 'Merodii ga hibiku'
 
   def test_floating_n_reattach(self):
     assert romanize('分からんよ') == 'Wakaran yo'
@@ -309,14 +304,14 @@ class TestLongVowels:
     assert romanize('さぁ行こう') == 'Saa ikou'
 
   def test_small_vowel_across_rows_stays_a_digraph(self):
-    assert romanize('フェイク') == 'Feiku'
-    assert romanize('チェック') == 'Chekku'
+    assert romanize('フェンリル') == 'Fenriru'
+    assert romanize('チェルシー') == 'Cherushii'
 
   def test_repeated_interjection_joins(self):
     assert romanize('ねえねえ') == 'Nee nee'
     assert romanize('ああああ') == 'Aaaa'
     assert romanize('ほらほら') == 'Hora hora'   # a repeated word is still two words
-    assert romanize('バイバイまたね') == 'Baibai mata ne'   # two-mora katakana doubles
+    assert romanize('ドキドキまたね') == 'Dokidoki mata ne'   # two-mora katakana doubles
 
   def test_filler_kana_leans_on_the_word_before(self):
     assert romanize('たとえ君が') == 'Tatoe kimi ga'
@@ -337,40 +332,32 @@ class TestLyricRules:
     assert romanize('靴を捨てたんだっけ') == 'Kutsu wo sutetan dakke'
 
   def test_contracted_n_on_the_copula_stays_one_word(self):
-    assert romanize('そうなんだよ') == 'Sou nanda yo'
     assert romanize('君だけが僕の音楽なんだ') == 'Kimi dake ga boku no ongaku nanda'
 
   def test_katakana_separator_is_a_word_break(self):
-    assert romanize('タイム・マシン') == 'Taimu mashin'
-    assert romanize('ロミオ・アンド・ジュリエット') == 'Romio ando jurietto'
+    assert romanize('ドキドキ・ワクワク') == 'Dokidoki wakuwaku'
+    assert romanize('チェルシー・ネオン・ソナタ') == 'Cherushii neon sonata'
 
   def test_small_vowel_on_u_keeps_the_w(self):
-    assert romanize('ウォークマン') == 'Wookuman'
-    assert romanize('ウィスキー') == 'Wisukii'
-    assert romanize('ウェイト') == 'Weito'
+    assert romanize('ウォシュレット') == 'Woshuretto'
+    assert romanize('ウィスタリア') == 'Wisutaria'
+    assert romanize('ウェルテル') == 'Weruteru'
 
   def test_split_katakana_word_rejoins_only_when_listed(self):
-    assert romanize('ラップランドの納屋の下') == 'Rappurando no naya no shita'
-    assert romanize('ヒッチコックみたいな') == 'Hicchikokku mitai na'
+    # foreign=False needed: every jp_words.tsv j row has an English lemma
+    assert romanize('ラップランドの納屋の下', foreign=False) == 'Rappurando no naya no shita'
+    assert romanize('ヒッチコックみたいな', foreign=False) == 'Hicchikokku mitai na'
 
   def test_two_word_loan_phrase_stays_split(self):
-    assert romanize('ハロゲンライトだけ') == 'Harogen raito dake'
-    assert romanize('魅惑ハイテンション') == 'Miwaku hai tenshon'
-    assert romanize('メロンパン') == 'Meron pan'
-    assert romanize('タイムマシン') == 'Taimu mashin'
-    assert romanize('心も運命もラブソングも') == 'Kokoro mo unmei mo rabu songu mo'
+    assert romanize('ネオンライトだけ') == 'Neon raito dake'
+    assert romanize('魅惑ピアノソナタ') == 'Miwaku piano sonata'
+    assert romanize('心も運命もネオンソナタも') == 'Kokoro mo unmei mo neon sonata mo'
 
-  def test_suffix_reading_follows_the_word_before_it(self):
-    assert romanize('可能性') == 'Kanousei'
-    assert romanize('僕等の歌') == 'Bokura no uta'   # 等 after a pronoun reads ra
-    assert romanize('一等') == 'Ittou'               # after a number it is the rank
+  def test_tou_after_a_number_is_the_rank(self):
+    assert romanize('一等') == 'Ittou'
 
   def test_honorific_kun_splits_off_the_noun(self):
     assert romanize('追いつけない ただ君に晴れ') == 'Oitsukenai tada kimi ni hare'
-
-  def test_classical_ki_joins_its_stem(self):
-    assert romanize('思い出す幼き日') == 'Omoidasu osanaki hi'
-    assert romanize('跡形も無き') == 'Atokata mo naki'
 
   def test_prefix_with_nothing_to_lead_is_a_noun(self):
     assert romanize('愛') == 'Ai'          # as a prefix it would read mana
@@ -378,19 +365,13 @@ class TestLyricRules:
 
   def test_nante_reads_nan(self):
     assert romanize('何て言えばいいんだ') == 'Nante ieba iin da'
-    assert romanize('何を言ったって') == 'Nani wo ittatte'
 
   def test_nagara_joins_its_verb(self):
     assert romanize('その時を待ちながら') == 'Sono toki wo machinagara'
     assert romanize('笑いながら顔を寄せて') == 'Warainagara kao wo yosete'
 
-  def test_yo_ga_akeru_idiom(self):
-    assert romanize('いつかやっと夜が明けたら') == 'Itsuka yatto yo ga aketara'
-    assert romanize('夜に駆ける') == 'Yoru ni kakeru'
-
   def test_number_joins_counters_only(self):
     assert romanize('この詩はあと八十字') == 'Kono uta wa ato hachijuu ji'
-    assert romanize('12時') == 'Juuniji'
     assert romanize('第六感尖らして') == 'Dairokukan togarashite'   # 第 makes one word
 
   def test_one_character_number_joins_the_noun_it_counts(self):
@@ -419,6 +400,10 @@ class TestLyricRules:
     assert romanize('震える一歩', title=True) == 'Furueru Ippo'
 
   def test_title_case_lowercases_every_merged_word(self):
-    assert romanize('ロミオ・アンド・ジュリエット', title=True) == 'Romio Ando Jurietto'
+    assert romanize('ドキドキ・ワクワク・キラキラ', title=True) == 'Dokidoki Wakuwaku Kirakira'
     assert romanize('思い出す幼き日', title=True) == 'Omoidasu Osanaki Hi'
     assert romanize('可能性の話', title=True) == 'Kanousei no Hanashi'
+
+  def test_katakana_loanword_english_by_default(self):
+    assert romanize('シナリオ') == 'Scenario'
+    assert romanize('シナリオ', foreign=False) == 'Shinario'

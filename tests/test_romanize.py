@@ -39,8 +39,15 @@ def test_pairs_chinese_are_per_glyph():
   pytest.importorskip('pypinyin')
   assert pairs('你好', lang='cn') == [('你', 'ni'), ('好', 'hao')]
 
+def test_pairs_korean_are_per_glyph():
+  pytest.importorskip('korean_romanizer')
+  assert pairs('안녕', lang='kr') == [('안', 'an'), ('녕', 'nyeong')]
+
 def test_pairs_non_cjk_empty():
   assert tuple(pairs('hello', lang='jp')) == ()
+
+def test_mora_non_japanese_empty():
+  assert tuple(mora('abc')) == ()
 
 def test_mora_splits_per_kana():
   # each kana is one unit (浮 -> u, か -> ka), a following vowel does not merge

@@ -242,7 +242,7 @@ def _sub_spans(text, spans, missed):
   parts.append(text[pos:])
   return ''.join(parts), kept
 
-def _wrap_nodes(path, text, spans, used):
+def _wrap_nodes(path, text, spans, used, source=''):
   """Copy a candidate parse out: its words carry no spacing and the next tagger
   call frees them."""
   nodes = []
@@ -254,6 +254,11 @@ def _wrap_nodes(path, text, spans, used):
     if spans and idx >= 0:
       n.ruby, hit = _token_ruby(w.surface, idx, spans)
       used.update(hit)
+    # a kana word absent from the input is a reading romakit wrote (リフジン
+    # splits to リフ, unidic riff): read it as kana, never as the lemma.
+    if (n.ruby is None and source and KANA_ONLY_REGEX.fullmatch(w.surface)
+        and w.surface not in source and cutlet.has_foreign_lemma(w)):
+      n.ruby = w.surface
     n.surface = w.surface
     n.feature = w.feature
     n.is_unk = w.is_unk
@@ -597,7 +602,7 @@ class LyricalCutlet(cutlet.Cutlet):
         out.append(roma)
     return out
 
-  def _tag(self, text, spans):
+  def _tag(self, text, spans, source=''):
     """Split into words, picking the best-scoring parse.
 
     Returns (words, indexes of the furigana spans used).
@@ -615,14 +620,14 @@ class LyricalCutlet(cutlet.Cutlet):
           if score < low:
             best, low = i, score
       if best != 0:
-        words = _wrap_nodes(paths[best], text, spans, used)
+        words = _wrap_nodes(paths[best], text, spans, used, source)
     if words is None:
-      words = _wrap_nodes(self.tagger(text), text, spans, used)
+      words = _wrap_nodes(self.tagger(text), text, spans, used, source)
     return words, used
 
   def _build(self, text, capitalize, title):
     """Parse to (words, romaji tokens); shared by romaji and romaji_pairs."""
-    text = SEPARATOR_REGEX.sub(' ', cutlet.normalize_text(text))
+    source = text = SEPARATOR_REGEX.sub(' ', cutlet.normalize_text(text))
     if KANJI_REGEX.search(text):
       text = _zh_to_shinjitai(text)
     text = DIGIT_RUN_REGEX.sub(_kanji_number, text)
@@ -630,13 +635,13 @@ class LyricalCutlet(cutlet.Cutlet):
       text = pat.sub(kana, text)
     # last, so furigana positions match the text MeCab actually sees
     text, spans = _strip_ruby(text)
-    words, used = self._tag(text, spans)
+    words, used = self._tag(text, spans, source)
     missed = set(range(len(spans))) - used
     if missed:
       # furigana split across two words (道導 -> 道 + 導): write the kana into the
       # text instead. Reading stays right, word split gets worse.
       text, spans = _sub_spans(text, spans, missed)
-      words, used = self._tag(text, spans)
+      words, used = self._tag(text, spans, source)
     tokens = self.romaji_tokens(words, capitalize, title)
     _geminate_ichi(words, tokens)
     _respace(words, tokens)
@@ -659,10 +664,8 @@ class LyricalCutlet(cutlet.Cutlet):
 # --- public API ---
 
 @lru_cache(maxsize=None)
-def _romanizer():
-  # Lyric romaji spells katakana out (merodi, haato); cutlet's foreign spelling
-  # would print the source word (melody, heart).
-  katsu = LyricalCutlet('hepburn', use_foreign_spelling=False)
+def _romanizer(foreign=True):
+  katsu = LyricalCutlet('hepburn', use_foreign_spelling=foreign)
   katsu.use_tch = False  # lyric romaji writes kocchi, not cutlet's traditional kotchi
   # replaces cutlet's English spellings (東京 Tokyo, 弁当 bento) with the reading
   katsu.exceptions = dict(EXCEPTIONS)
@@ -673,24 +676,25 @@ def has_japanese(text):
   return bool(JP_REGEX.search(text))
 
 @lru_cache(maxsize=8192)  # a subtitle or lyric file repeats lines; keep them all
-def romanize(text, capitalize=True, title=False):
-  """Japanese text to Hepburn romaji. Other text passes through unchanged."""
+def romanize(text, capitalize=True, title=False, foreign=True):
+  """Japanese text to Hepburn romaji. Other text passes through unchanged.
+  foreign=False spells katakana loanwords out instead of their English lemma."""
   if not has_japanese(text):
     return text
-  out = _romanizer().romaji(text, capitalize=capitalize, title=title)
+  out = _romanizer(foreign).romaji(text, capitalize=capitalize, title=title)
   return FLOATING_N_REGEX.sub('n', out)
 
 @lru_cache(maxsize=8192)
-def pairs(text, capitalize=True, title=False):
+def pairs(text, capitalize=True, title=False, foreign=True):
   """[(word surface, romaji)] per Japanese word; () when text has no Japanese."""
   if not has_japanese(text):
     return ()
-  return tuple(_romanizer().romaji_pairs(text, capitalize=capitalize, title=title))
+  return tuple(_romanizer(foreign).romaji_pairs(text, capitalize=capitalize, title=title))
 
 @lru_cache(maxsize=8192)
-def mora(text, capitalize=True, title=False):
+def mora(text, capitalize=True, title=False, foreign=True):
   """Romaji split into karaoke units, one per kana mora (foreign words whole);
   () when text has no Japanese."""
   if not has_japanese(text):
     return ()
-  return tuple(_romanizer().romaji_mora(text, capitalize=capitalize, title=title))
+  return tuple(_romanizer(foreign).romaji_mora(text, capitalize=capitalize, title=title))
